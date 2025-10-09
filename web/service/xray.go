@@ -23,9 +23,10 @@ var (
 // XrayService provides business logic for Xray process management.
 // It handles starting, stopping, restarting Xray, and managing its configuration.
 type XrayService struct {
-	inboundService InboundService
-	settingService SettingService
-	xrayAPI        xray.XrayAPI
+	inboundService  InboundService
+	outboundService OutboundService
+	settingService  SettingService
+	xrayAPI         xray.XrayAPI
 }
 
 // IsXrayRunning checks if the Xray process is currently running.
@@ -188,6 +189,63 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		inboundConfig := inbound.GenXrayInboundConfig()
 		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
 	}
+
+	// Integrate database outbounds with template outbounds
+	outbounds, err := s.outboundService.GetEnabledOutbounds()
+	if err != nil {
+		logger.Warning("Failed to get outbounds from database:", err)
+	} else if len(outbounds) > 0 {
+		// Parse existing outbounds from template
+		var templateOutbounds []any
+		if len(xrayConfig.OutboundConfigs) > 0 {
+			err = json.Unmarshal(xrayConfig.OutboundConfigs, &templateOutbounds)
+			if err != nil {
+				logger.Warning("Failed to parse template outbounds:", err)
+				templateOutbounds = []any{}
+			}
+		}
+
+		// Append database outbounds
+		for _, outbound := range outbounds {
+			outboundConfig := outbound.GenXrayOutboundConfig()
+			// Convert to map for appending to JSON array
+			outboundMap := map[string]any{
+				"protocol": outboundConfig.Protocol,
+				"tag":      outboundConfig.Tag,
+			}
+			if len(outboundConfig.Settings) > 0 {
+				var settings any
+				json.Unmarshal(outboundConfig.Settings, &settings)
+				outboundMap["settings"] = settings
+			}
+			if len(outboundConfig.StreamSettings) > 0 {
+				var streamSettings any
+				json.Unmarshal(outboundConfig.StreamSettings, &streamSettings)
+				outboundMap["streamSettings"] = streamSettings
+			}
+			if len(outboundConfig.ProxySettings) > 0 {
+				var proxySettings any
+				json.Unmarshal(outboundConfig.ProxySettings, &proxySettings)
+				outboundMap["proxySettings"] = proxySettings
+			}
+			if len(outboundConfig.Mux) > 0 {
+				var mux any
+				json.Unmarshal(outboundConfig.Mux, &mux)
+				outboundMap["mux"] = mux
+			}
+
+			templateOutbounds = append(templateOutbounds, outboundMap)
+		}
+
+		// Re-marshal the combined outbounds
+		newOutbounds, err := json.MarshalIndent(templateOutbounds, "", "  ")
+		if err != nil {
+			logger.Warning("Failed to marshal combined outbounds:", err)
+		} else {
+			xrayConfig.OutboundConfigs = newOutbounds
+		}
+	}
+
 	return xrayConfig, nil
 }
 

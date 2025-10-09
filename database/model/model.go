@@ -64,6 +64,26 @@ type OutboundTraffics struct {
 	Total int64  `json:"total" form:"total" gorm:"default:0"`
 }
 
+// Outbound represents an Xray outbound configuration.
+type Outbound struct {
+	Id       int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
+	UserId   int    `json:"-"`
+	Remark   string `json:"remark" form:"remark"`
+	Enable   bool   `json:"enable" form:"enable" gorm:"default:true"`
+	Tag      string `json:"tag" form:"tag" gorm:"unique"`
+	Protocol string `json:"protocol" form:"protocol"` // freedom, blackhole, vmess, vless, trojan, shadowsocks, socks, http, dns
+	Settings string `json:"settings" form:"settings"` // JSON string containing outbound settings
+
+	// Optional configurations
+	StreamSettings string `json:"streamSettings" form:"streamSettings"` // JSON string for transport settings
+	ProxySettings  string `json:"proxySettings" form:"proxySettings"`   // JSON string for proxy settings
+	Mux            string `json:"mux" form:"mux"`                       // JSON string for multiplexing settings
+
+	// Metadata
+	CreatedAt int64 `json:"createdAt" form:"createdAt"`
+	UpdatedAt int64 `json:"updatedAt" form:"updatedAt"`
+}
+
 // InboundClientIps stores IP addresses associated with inbound clients for access control.
 type InboundClientIps struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
@@ -91,6 +111,18 @@ func (i *Inbound) GenXrayInboundConfig() *xray.InboundConfig {
 		StreamSettings: json_util.RawMessage(i.StreamSettings),
 		Tag:            i.Tag,
 		Sniffing:       json_util.RawMessage(i.Sniffing),
+	}
+}
+
+// GenXrayOutboundConfig generates an Xray outbound configuration from the Outbound model.
+func (o *Outbound) GenXrayOutboundConfig() *xray.OutboundConfig {
+	return &xray.OutboundConfig{
+		Protocol:       o.Protocol,
+		Tag:            o.Tag,
+		Settings:       json_util.RawMessage(o.Settings),
+		StreamSettings: json_util.RawMessage(o.StreamSettings),
+		ProxySettings:  json_util.RawMessage(o.ProxySettings),
+		Mux:            json_util.RawMessage(o.Mux),
 	}
 }
 

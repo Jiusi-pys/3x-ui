@@ -9,12 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// APIController handles the main API routes for the 3x-ui panel, including inbounds and server management.
+// APIController handles the main API routes for the 3x-ui panel, including inbounds, outbounds, and server management.
 type APIController struct {
 	BaseController
-	inboundController *InboundController
-	serverController  *ServerController
-	Tgbot             service.Tgbot
+	inboundController  *InboundController
+	outboundController *OutboundController
+	serverController   *ServerController
+	Tgbot              service.Tgbot
 }
 
 // NewAPIController creates a new APIController instance and initializes its routes.
@@ -34,7 +35,7 @@ func (a *APIController) checkAPIAuth(c *gin.Context) {
 	c.Next()
 }
 
-// initRouter sets up the API routes for inbounds, server, and other endpoints.
+// initRouter sets up the API routes for inbounds, outbounds, server, and other endpoints.
 func (a *APIController) initRouter(g *gin.RouterGroup) {
 	// Main API group
 	api := g.Group("/panel/api")
@@ -43,6 +44,10 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	// Inbounds API
 	inbounds := api.Group("/inbounds")
 	a.inboundController = NewInboundController(inbounds)
+
+	// Outbounds API
+	outbounds := api.Group("/outbounds")
+	a.outboundController = NewOutboundController(outbounds)
 
 	// Server API
 	server := api.Group("/server")
