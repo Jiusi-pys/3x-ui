@@ -459,6 +459,8 @@
 "Routings" = "Правила маршрутизації"
 "RoutingsDesc" = "Пріоритет кожного правила важливий!"
 "completeTemplate" = "Усі"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "Рівень журналу"
 "logLevelDesc" = "Рівень журналу для журналів помилок із зазначенням інформації, яку потрібно записати."
 "accessLog" = "Журнал доступу"

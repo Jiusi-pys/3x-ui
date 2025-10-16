@@ -459,6 +459,8 @@
 "Routings" = "قواعد التوجيه"
 "RoutingsDesc" = "أولوية كل قاعدة مهمة جداً!"
 "completeTemplate" = "الكل"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "مستوى السجلات"
 "logLevelDesc" = "مستوى السجل الخاص بالأخطاء، اللي بيوضح المعلومات المطلوبة للتسجيل."
 "accessLog" = "سجل الوصول"

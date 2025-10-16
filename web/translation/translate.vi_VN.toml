@@ -459,6 +459,8 @@
 "Routings" = "Quy tắc định tuyến"
 "RoutingsDesc" = "Mức độ ưu tiên của mỗi quy tắc đều quan trọng!"
 "completeTemplate" = "All"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "Mức đăng nhập"
 "logLevelDesc" = "Cấp độ nhật ký cho nhật ký lỗi, cho biết thông tin cần được ghi lại."
 "accessLog" = "Nhật ký truy cập"

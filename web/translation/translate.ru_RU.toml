@@ -459,6 +459,8 @@
 "Routings" = "Маршрутизация"
 "RoutingsDesc" = "Важен приоритет каждого правила!"
 "completeTemplate" = "Все"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "Уровень логов"
 "logLevelDesc" = "Уровень журнала для журналов ошибок, указывающий информацию, которую необходимо записать."
 "accessLog" = "Логи доступа"

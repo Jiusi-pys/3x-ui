@@ -228,6 +228,7 @@
       },
       oldXraySetting: '',
       xraySetting: '',
+      effectiveConfig: '',
       inboundTags: [],
       outboundsTraffic: [],
       saveBtnDisable: true,
@@ -370,11 +371,16 @@
             this.loadingStates.fetched = true
           }
 
-          result = JSON.parse(msg.obj);
-          xs = JSON.stringify(result.xraySetting, null, 2);
+          const result = msg.obj || {};
+          const templateConfig = result.xraySetting || {};
+          const xs = JSON.stringify(templateConfig, null, 2);
           this.oldXraySetting = xs;
           this.xraySetting = xs;
-          this.inboundTags = result.inboundTags;
+          this.inboundTags = result.inboundTags || [];
+          this.effectiveConfig = JSON.stringify(result.effectiveConfig || {}, null, 2);
+          if (this.cm != null && this.advSettings === 'effectiveConfig') {
+            this.cm.setValue(this.effectiveConfig);
+          }
           this.saveBtnDisable = true;
         }
       },
@@ -491,6 +497,7 @@
         textAreaObj = document.getElementById('xraySetting');
         textAreaObj.value = this[this.advSettings];
         this.cm = CodeMirror.fromTextArea(textAreaObj, this.cmOptions);
+        this.cm.setOption('readOnly', this.advSettings === 'effectiveConfig');
         this.cm.on('change', editor => {
           value = editor.getValue();
           if (this.isJsonString(value)) {
