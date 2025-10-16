@@ -414,7 +414,7 @@
         const msg = await HttpUtil.get("/panel/setting/getDefaultJsonConfig");
         this.loading(false);
         if (msg.success) {
-          this.templateSettings = JSON.parse(JSON.stringify(msg.obj, null, 2));
+          this.templateSettings = this.ensureTemplateStructure(JSON.parse(JSON.stringify(msg.obj, null, 2)));
           this.saveBtnDisable = true;
         }
       },
@@ -422,8 +422,27 @@
         if (pageKey == 'tpl-advanced') this.changeCode();
         if (pageKey == 'tpl-balancer') this.changeObsCode();
       },
+      ensureTemplateStructure(template) {
+        const safeTemplate = template ?? {};
+        if (!Array.isArray(safeTemplate.outbounds)) {
+          safeTemplate.outbounds = [];
+        }
+        if (!safeTemplate.routing) {
+          safeTemplate.routing = {};
+        }
+        if (!Array.isArray(safeTemplate.routing.rules)) {
+          safeTemplate.routing.rules = [];
+        }
+        if (!safeTemplate.policy) {
+          safeTemplate.policy = {};
+        }
+        if (!safeTemplate.policy.system) {
+          safeTemplate.policy.system = {};
+        }
+        return safeTemplate;
+      },
       syncRulesWithOutbound(tag, setting) {
-        const newTemplateSettings = this.templateSettings;
+        const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
         const haveRules = newTemplateSettings.routing.rules.some((r) => r?.outboundTag === tag);
         const outboundIndex = newTemplateSettings.outbounds.findIndex((o) => o.tag === tag);
         if (!haveRules && outboundIndex > 0) {
@@ -437,8 +456,9 @@
       templateRuleGetter(routeSettings) {
         const { property, outboundTag } = routeSettings;
         let result = [];
-        if (this.templateSettings != null) {
-          this.templateSettings.routing.rules.forEach(
+        const rules = this.templateSettings?.routing?.rules;
+        if (Array.isArray(rules)) {
+          rules.forEach(
             (routingRule) => {
               if (
                 routingRule.hasOwnProperty(property) &&
@@ -454,9 +474,8 @@
       },
       templateRuleSetter(routeSettings) {
         const { data, property, outboundTag } = routeSettings;
-        const oldTemplateSettings = this.templateSettings;
-        const newTemplateSettings = oldTemplateSettings;
-        currentProperty = this.templateRuleGetter({ outboundTag, property })
+        const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
+        const currentProperty = this.templateRuleGetter({ outboundTag, property });
         if (currentProperty.length == 0) {
           const propertyRule = {
             type: "field",
@@ -467,7 +486,7 @@
         }
         else {
           const newRules = [];
-          insertedOnce = false;
+          let insertedOnce = false;
           newTemplateSettings.routing.rules.forEach(
             (routingRule) => {
               if (
@@ -984,11 +1003,11 @@
       templateSettings: {
         get: function () {
           const parsedSettings = this.xraySetting ? JSON.parse(this.xraySetting) : null;
-          return parsedSettings;
+          return parsedSettings ? this.ensureTemplateStructure(parsedSettings) : null;
         },
         set: function (newValue) {
           if (newValue) {
-            this.xraySetting = JSON.stringify(newValue, null, 2);
+            this.xraySetting = JSON.stringify(this.ensureTemplateStructure(newValue), null, 2);
           }
         },
       },
@@ -1001,9 +1020,13 @@
         },
       },
       outboundSettings: {
-        get: function () { return this.templateSettings ? JSON.stringify(this.templateSettings.outbounds, null, 2) : null; },
+        get: function () {
+          if (!this.templateSettings) return null;
+          const outbounds = Array.isArray(this.templateSettings.outbounds) ? this.templateSettings.outbounds : [];
+          return JSON.stringify(outbounds, null, 2);
+        },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           newTemplateSettings.outbounds = JSON.parse(newValue);
           this.templateSettings = newTemplateSettings;
         },
@@ -1012,7 +1035,8 @@
         get: function () {
           data = []
           if (this.templateSettings != null) {
-            this.templateSettings.outbounds.forEach((o, index) => {
+            const outbounds = Array.isArray(this.templateSettings.outbounds) ? this.templateSettings.outbounds : [];
+            outbounds.forEach((o, index) => {
               data.push({ 'key': index, ...o });
             });
           }
@@ -1108,13 +1132,14 @@
       freedomStrategy: {
         get: function () {
           if (!this.templateSettings) return "AsIs";
-          freedomOutbound = this.templateSettings.outbounds.find((o) => o.protocol === "freedom" && o.tag == "direct");
+          const outbounds = Array.isArray(this.templateSettings.outbounds) ? this.templateSettings.outbounds : [];
+          freedomOutbound = outbounds.find((o) => o.protocol === "freedom" && o.tag == "direct");
           if (!freedomOutbound) return "AsIs";
           if (!freedomOutbound.settings || !freedomOutbound.settings.domainStrategy) return "AsIs";
           return freedomOutbound.settings.domainStrategy;
         },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           freedomOutboundIndex = newTemplateSettings.outbounds.findIndex((o) => o.protocol === "freedom" && o.tag == "direct");
           if (freedomOutboundIndex == -1) {
             newTemplateSettings.outbounds.push({ protocol: "freedom", tag: "direct", settings: { "domainStrategy": newValue } });
@@ -1132,7 +1157,7 @@
           return this.templateSettings.routing.domainStrategy;
         },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           newTemplateSettings.routing.domainStrategy = newValue;
           this.templateSettings = newTemplateSettings;
         }
@@ -1183,44 +1208,44 @@
       },
       statsInboundUplink: {
         get: function () {
-          if (!this.templateSettings || !this.templateSettings.policy.system || !this.templateSettings.policy.system.statsInboundUplink) return false;
+          if (!this.templateSettings || !this.templateSettings.policy?.system?.statsInboundUplink) return false;
           return this.templateSettings.policy.system.statsInboundUplink;
         },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           newTemplateSettings.policy.system.statsInboundUplink = newValue;
           this.templateSettings = newTemplateSettings;
         }
       },
       statsInboundDownlink: {
         get: function () {
-          if (!this.templateSettings || !this.templateSettings.policy.system || !this.templateSettings.policy.system.statsInboundDownlink) return false;
+          if (!this.templateSettings || !this.templateSettings.policy?.system?.statsInboundDownlink) return false;
           return this.templateSettings.policy.system.statsInboundDownlink;
         },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           newTemplateSettings.policy.system.statsInboundDownlink = newValue;
           this.templateSettings = newTemplateSettings;
         }
       },
       statsOutboundUplink: {
         get: function () {
-          if (!this.templateSettings || !this.templateSettings.policy.system || !this.templateSettings.policy.system.statsOutboundUplink) return false;
+          if (!this.templateSettings || !this.templateSettings.policy?.system?.statsOutboundUplink) return false;
           return this.templateSettings.policy.system.statsOutboundUplink;
         },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           newTemplateSettings.policy.system.statsOutboundUplink = newValue;
           this.templateSettings = newTemplateSettings;
         }
       },
       statsOutboundDownlink: {
         get: function () {
-          if (!this.templateSettings || !this.templateSettings.policy.system || !this.templateSettings.policy.system.statsOutboundDownlink) return false;
+          if (!this.templateSettings || !this.templateSettings.policy?.system?.statsOutboundDownlink) return false;
           return this.templateSettings.policy.system.statsOutboundDownlink;
         },
         set: function (newValue) {
-          newTemplateSettings = this.templateSettings;
+          const newTemplateSettings = this.ensureTemplateStructure(this.templateSettings);
           newTemplateSettings.policy.system.statsOutboundDownlink = newValue;
           this.templateSettings = newTemplateSettings;
         }
