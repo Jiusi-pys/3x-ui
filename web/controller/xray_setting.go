@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"encoding/json"
+
 	"github.com/mhsanaei/3x-ui/v2/web/service"
 
 	"github.com/gin-gonic/gin"
@@ -48,8 +50,25 @@ func (a *XraySettingController) getXraySetting(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
 		return
 	}
-	xrayResponse := "{ \"xraySetting\": " + xraySetting + ", \"inboundTags\": " + inboundTags + " }"
-	jsonObj(c, xrayResponse, nil)
+	effectiveConfig, err := a.XrayService.GetXrayConfig()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
+		return
+	}
+
+	effectiveConfigJSON, err := json.Marshal(effectiveConfig)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
+		return
+	}
+
+	response := map[string]json.RawMessage{
+		"xraySetting":     json.RawMessage(xraySetting),
+		"inboundTags":     json.RawMessage(inboundTags),
+		"effectiveConfig": json.RawMessage(effectiveConfigJSON),
+	}
+
+	jsonObj(c, response, nil)
 }
 
 // updateSetting updates the Xray configuration settings.

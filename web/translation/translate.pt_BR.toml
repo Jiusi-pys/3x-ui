@@ -459,6 +459,8 @@
 "Routings" = "Regras de Roteamento"
 "RoutingsDesc" = "A prioridade de cada regra é importante!"
 "completeTemplate" = "Todos"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "Nível de Log"
 "logLevelDesc" = "O nível de log para erros, indicando a informação que precisa ser registrada."
 "accessLog" = "Log de Acesso"

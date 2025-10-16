@@ -459,6 +459,8 @@
 "Routings" = "路由規則"
 "RoutingsDesc" = "每條規則的優先順序都很重要"
 "completeTemplate" = "全部"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "日誌級別"
 "logLevelDesc" = "錯誤日誌的日誌級別，用於指示需要記錄的資訊"
 "accessLog" = "訪問日誌"

@@ -459,6 +459,8 @@
 "Routings" = "Yönlendirme Kuralları"
 "RoutingsDesc" = "Her kuralın önceliği önemlidir!"
 "completeTemplate" = "Tümü"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "Günlük Seviyesi"
 "logLevelDesc" = "Hata günlükleri için günlük seviyesi, kaydedilmesi gereken bilgileri belirtir."
 "accessLog" = "Erişim Günlüğü"

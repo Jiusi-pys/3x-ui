@@ -459,6 +459,8 @@
 "Routings" = "Aturan Pengalihan"
 "RoutingsDesc" = "Prioritas setiap aturan penting!"
 "completeTemplate" = "Semua"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "Tingkat Log"
 "logLevelDesc" = "Tingkat log untuk log kesalahan, menunjukkan informasi yang perlu dicatat."
 "accessLog" = "Log Akses"

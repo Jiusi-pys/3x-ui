@@ -459,6 +459,8 @@
 "Routings" = "ルーティングルール"
 "RoutingsDesc" = "各ルールの優先順位が重要です"
 "completeTemplate" = "すべて"
+"EffectiveConfig" = "Effective runtime"
+"EffectiveConfigDesc" = "Merged runtime configuration generated from the template and database entries (read-only)."
 "logLevel" = "ログレベル"
 "logLevelDesc" = "エラーログのレベルを指定し、記録する情報を示します"
 "accessLog" = "アクセスログ"
