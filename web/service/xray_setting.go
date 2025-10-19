@@ -41,7 +41,7 @@ func (s *XraySettingService) CheckXrayConfig(XrayTemplateConfig string) error {
 
 // ApplyAdvancedSetting synchronizes the advanced editor payload with template storage
 // and database-backed inbound/outbound resources.
-func (s *XraySettingService) ApplyAdvancedSetting(payload string, inboundService *InboundService, outboundService *OutboundService) error {
+func (s *XraySettingService) ApplyAdvancedSetting(payload string, inboundService *InboundService, outboundService *OutboundService, ownerID int) error {
 	if inboundService == nil || outboundService == nil {
 		return errors.New("missing inbound or outbound service")
 	}
@@ -78,8 +78,8 @@ func (s *XraySettingService) ApplyAdvancedSetting(payload string, inboundService
 	}
 	existingOutboundByTag, existingEnabledOutboundByTag := indexOutboundsByTag(existingOutbounds)
 
-	templateInbounds, managedInbounds := partitionInbounds(postedInbounds, templateInboundTags, existingInboundByTag)
-	templateOutbounds, managedOutbounds := partitionOutbounds(postedOutbounds, templateOutboundTags, existingOutboundByTag)
+	templateInbounds, managedInbounds := partitionInbounds(postedInbounds, templateInboundTags, existingInboundByTag, ownerID)
+	templateOutbounds, managedOutbounds := partitionOutbounds(postedOutbounds, templateOutboundTags, existingOutboundByTag, ownerID)
 
 	templateMap["inbounds"] = templateInbounds
 	templateMap["outbounds"] = templateOutbounds
@@ -157,7 +157,7 @@ func indexOutboundsByTag(outbounds []*model.Outbound) (map[string]*model.Outboun
 	return all, enabled
 }
 
-func partitionInbounds(items []any, templateTags map[string]struct{}, existing map[string]*model.Inbound) ([]any, []*model.Inbound) {
+func partitionInbounds(items []any, templateTags map[string]struct{}, existing map[string]*model.Inbound, ownerID int) ([]any, []*model.Inbound) {
 	templateInbounds := make([]any, 0, len(items))
 	managed := make([]*model.Inbound, 0, len(items))
 	for _, item := range items {
@@ -170,7 +170,7 @@ func partitionInbounds(items []any, templateTags map[string]struct{}, existing m
 			templateInbounds = append(templateInbounds, inboundMap)
 			continue
 		}
-		inboundModel, err := buildInboundFromPayload(inboundMap, existing[tag])
+		inboundModel, err := buildInboundFromPayload(inboundMap, existing[tag], ownerID)
 		if err != nil || inboundModel == nil || inboundModel.Tag == "" || inboundModel.Port <= 0 || inboundModel.Protocol == "" {
 			templateInbounds = append(templateInbounds, inboundMap)
 			continue
@@ -180,7 +180,7 @@ func partitionInbounds(items []any, templateTags map[string]struct{}, existing m
 	return templateInbounds, managed
 }
 
-func partitionOutbounds(items []any, templateTags map[string]struct{}, existing map[string]*model.Outbound) ([]any, []*model.Outbound) {
+func partitionOutbounds(items []any, templateTags map[string]struct{}, existing map[string]*model.Outbound, ownerID int) ([]any, []*model.Outbound) {
 	templateOutbounds := make([]any, 0, len(items))
 	managed := make([]*model.Outbound, 0, len(items))
 	for _, item := range items {
@@ -193,7 +193,7 @@ func partitionOutbounds(items []any, templateTags map[string]struct{}, existing 
 			templateOutbounds = append(templateOutbounds, outboundMap)
 			continue
 		}
-		outboundModel, err := buildOutboundFromPayload(outboundMap, existing[tag])
+		outboundModel, err := buildOutboundFromPayload(outboundMap, existing[tag], ownerID)
 		if err != nil || outboundModel == nil || outboundModel.Tag == "" || outboundModel.Protocol == "" {
 			templateOutbounds = append(templateOutbounds, outboundMap)
 			continue
@@ -326,15 +326,19 @@ func syncManagedInbounds(inbounds []*model.Inbound, existingByTag map[string]*mo
 	return nil
 }
 
-func buildInboundFromPayload(payload map[string]any, existing *model.Inbound) (*model.Inbound, error) {
+func buildInboundFromPayload(payload map[string]any, existing *model.Inbound, ownerID int) (*model.Inbound, error) {
 	if existing == nil {
 		existing = &model.Inbound{}
 		existing.Enable = true
+		existing.UserId = ownerID
 	} else {
 		copy := *existing
 		existing = &copy
 	}
 	existing.Enable = true
+	if existing.UserId == 0 {
+		existing.UserId = ownerID
+	}
 
 	existing.Tag = getString(payload["tag"])
 	if listen, ok := payload["listen"].(string); ok {
@@ -397,16 +401,20 @@ func syncManagedOutbounds(outbounds []*model.Outbound, existingEnabled map[strin
 	return nil
 }
 
-func buildOutboundFromPayload(payload map[string]any, existing *model.Outbound) (*model.Outbound, error) {
+func buildOutboundFromPayload(payload map[string]any, existing *model.Outbound, ownerID int) (*model.Outbound, error) {
 	if existing == nil {
 		existing = &model.Outbound{}
 		existing.Enable = true
 		existing.CreatedAt = time.Now().Unix()
+		existing.UserId = ownerID
 	} else {
 		copy := *existing
 		existing = &copy
 	}
 	existing.Enable = true
+	if existing.UserId == 0 {
+		existing.UserId = ownerID
+	}
 
 	existing.Tag = getString(payload["tag"])
 	if protocol, ok := payload["protocol"].(string); ok {

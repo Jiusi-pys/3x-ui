@@ -30,7 +30,8 @@ func TestApplyAdvancedSettingSyncsDatabaseResources(t *testing.T) {
 	outboundSvc := OutboundService{}
 
 	payload := `{"inbounds":[{"tag":"adv-in","protocol":"vmess","port":12345,"settings":{},"streamSettings":{},"sniffing":{}}],"outbounds":[{"tag":"adv-out","protocol":"freedom","settings":{}}]}`
-	if err := xraySvc.ApplyAdvancedSetting(payload, &inboundSvc, &outboundSvc); err != nil {
+	const ownerID = 123
+	if err := xraySvc.ApplyAdvancedSetting(payload, &inboundSvc, &outboundSvc, ownerID); err != nil {
 		t.Fatalf("apply advanced setting: %v", err)
 	}
 
@@ -46,6 +47,9 @@ func TestApplyAdvancedSettingSyncsDatabaseResources(t *testing.T) {
 	if !inbound.Enable {
 		t.Fatalf("expected inbound enabled")
 	}
+	if inbound.UserId != ownerID {
+		t.Fatalf("expected inbound user id %d, got %d", ownerID, inbound.UserId)
+	}
 
 	var outbound model.Outbound
 	if err := db.Where("tag = ?", "adv-out").First(&outbound).Error; err != nil {
@@ -56,6 +60,9 @@ func TestApplyAdvancedSettingSyncsDatabaseResources(t *testing.T) {
 	}
 	if !outbound.Enable {
 		t.Fatalf("expected outbound enabled")
+	}
+	if outbound.UserId != ownerID {
+		t.Fatalf("expected outbound user id %d, got %d", ownerID, outbound.UserId)
 	}
 
 	templateJSON, err := settingSvc.GetXrayConfigTemplate()
@@ -74,7 +81,7 @@ func TestApplyAdvancedSettingSyncsDatabaseResources(t *testing.T) {
 	}
 
 	emptyPayload := `{"inbounds":[],"outbounds":[]}`
-	if err := xraySvc.ApplyAdvancedSetting(emptyPayload, &inboundSvc, &outboundSvc); err != nil {
+	if err := xraySvc.ApplyAdvancedSetting(emptyPayload, &inboundSvc, &outboundSvc, ownerID); err != nil {
 		t.Fatalf("remove managed resources: %v", err)
 	}
 

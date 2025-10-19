@@ -6,6 +6,7 @@ import (
 
 	"github.com/mhsanaei/3x-ui/v2/database/model"
 	"github.com/mhsanaei/3x-ui/v2/web/service"
+	"github.com/mhsanaei/3x-ui/v2/web/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -109,7 +110,13 @@ func (a *XraySettingController) updateSetting(c *gin.Context) {
 		return
 	}
 
-	err := a.XraySettingService.ApplyAdvancedSetting(xraySetting, &a.InboundService, &a.OutboundService)
+	user := session.GetLoginUser(c)
+	ownerID := 0
+	if user != nil {
+		ownerID = user.Id
+	}
+
+	err := a.XraySettingService.ApplyAdvancedSetting(xraySetting, &a.InboundService, &a.OutboundService, ownerID)
 	if err == nil {
 		a.XrayService.SetToNeedRestart()
 	}
