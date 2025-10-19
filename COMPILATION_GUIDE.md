@@ -6,17 +6,29 @@
 
 ## 中文指南
 
-本指南将帮助您在 Linux、Windows 和 macOS 平台上编译和部署 3X-UI 项目。
+本指南提供跨平台安装的总览说明，并链接至拆分出的各平台文档。
 
 ### 目录
-1. [系统要求](#系统要求)
-2. [依赖安装](#依赖安装)
-3. [Linux 编译](#linux-编译)
-4. [Windows 编译](#windows-编译)
-5. [macOS 编译](#macos-编译)
-6. [交叉编译](#交叉编译)
-7. [部署说明](#部署说明)
-8. [常见问题](#常见问题)
+1. [平台导航](#平台导航)
+2. [系统要求](#系统要求)
+3. [依赖安装](#依赖安装)
+4. [常见问题](#常见问题)
+5. [English Guide](#english-guide)
+
+### 平台导航
+
+- [Linux 编译与部署](./docs/guides/linux.md)
+- [其他 Linux 场景（交叉编译、Docker、Alpine 等）](./docs/guides/linux_other.md)
+- [Windows 编译部署](./docs/guides/windows.md)
+- [macOS 部署指南](./docs/guides/macos.md)
+
+如需快速安装，可直接运行：
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/Jiusi-pys/3x-ui/main/install.sh)
+```
+
+脚本会自动下载 Release 包、部署 Xray 与面板，并注册系统服务。
 
 ---
 
@@ -111,235 +123,19 @@ brew install git wget
 
 ### Linux 编译
 
-#### 方法一：简单编译（动态链接）
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. 下载 Go 模块依赖
-go mod download
-
-# 3. 编译
-CGO_ENABLED=1 go build -o x-ui main.go
-
-# 4. 验证编译结果
-./x-ui -v
-```
-
-#### 方法二：静态编译（推荐用于生产环境）
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. 下载依赖
-go mod download
-
-# 3. 静态编译
-CGO_ENABLED=1 go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o x-ui main.go
-
-# 4. 验证是静态链接
-ldd x-ui
-# 应该显示 "not a dynamic executable" 或无输出
-
-# 5. 检查文件大小和类型
-ls -lh x-ui
-file x-ui
-```
-
-#### 方法三：使用 Docker 编译（无需本地安装 Go）
-
-```bash
-# 使用官方 Go 镜像编译
-docker run --rm \
-  -v "$PWD":/app \
-  -w /app \
-  golang:1.25 \
-  sh -c "go mod download && CGO_ENABLED=1 go build -o x-ui main.go"
-```
-
-#### 下载 Xray-core 和地理数据库
-
-```bash
-# 创建 bin 目录
-mkdir -p bin
-cd bin
-
-# 下载 Xray-core (根据架构选择)
-# amd64
-wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
-unzip Xray-linux-64.zip
-rm Xray-linux-64.zip
-
-# arm64
-# wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-arm64-v8a.zip
-# unzip Xray-linux-arm64-v8a.zip
-
-# 下载地理数据库
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-
-# 下载区域特定的地理数据库（可选）
-wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-wget -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
-wget -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
-
-cd ..
-```
+完整的构建、部署与维护流程请参阅 [docs/guides/linux.md](./docs/guides/linux.md)。
 
 ---
 
 ### Windows 编译
 
-#### 方法一：使用 PowerShell 编译
-
-```powershell
-# 1. 克隆项目
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. 设置环境变量
-$env:CGO_ENABLED="1"
-$env:GOOS="windows"
-$env:GOARCH="amd64"
-
-# 3. 下载依赖
-go mod download
-
-# 4. 编译
-go build -ldflags "-w -s" -o x-ui.exe main.go
-
-# 5. 验证
-.\x-ui.exe -v
-```
-
-#### 下载 Xray-core 和地理数据库
-
-```powershell
-# 创建 bin 目录
-New-Item -Path bin -ItemType Directory -Force
-cd bin
-
-# 下载 Xray-core
-Invoke-WebRequest -Uri "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
-Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath .
-Remove-Item "Xray-windows-64.zip"
-
-# 下载地理数据库
-Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip.dat"
-Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite.dat"
-
-# 下载区域特定数据库（可选）
-Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat" -OutFile "geoip_IR.dat"
-Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat" -OutFile "geosite_IR.dat"
-Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip_RU.dat"
-Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite_RU.dat"
-
-cd ..
-```
-
-#### 创建 Windows 服务（可选）
-
-```powershell
-# 使用 NSSM 创建 Windows 服务
-# 1. 下载 NSSM: https://nssm.cc/download
-# 2. 安装服务
-nssm install x-ui "C:\path\to\x-ui.exe"
-nssm set x-ui AppDirectory "C:\path\to\"
-nssm start x-ui
-```
+完整编译与服务配置指南请参阅 [docs/guides/windows.md](./docs/guides/windows.md)。
 
 ---
 
 ### macOS 编译
 
-#### 编译步骤
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. 设置环境变量
-export CGO_ENABLED=1
-export GOOS=darwin
-export GOARCH=amd64  # 或 arm64 用于 Apple Silicon
-
-# 3. 下载依赖
-go mod download
-
-# 4. 编译
-go build -ldflags "-w -s" -o x-ui main.go
-
-# 5. 赋予执行权限
-chmod +x x-ui
-
-# 6. 验证
-./x-ui -v
-```
-
-#### 下载 Xray-core 和地理数据库
-
-```bash
-# 创建 bin 目录
-mkdir -p bin
-cd bin
-
-# 下载 Xray-core
-# Intel Mac (amd64)
-wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-macos-64.zip
-unzip Xray-macos-64.zip
-rm Xray-macos-64.zip
-
-# Apple Silicon (arm64)
-# wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-macos-arm64-v8a.zip
-# unzip Xray-macos-arm64-v8a.zip
-
-# 下载地理数据库
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-wget -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
-wget -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
-
-cd ..
-```
-
-#### 创建 macOS LaunchDaemon（可选）
-
-```bash
-# 创建 plist 文件
-sudo tee /Library/LaunchDaemons/com.x-ui.plist > /dev/null <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.x-ui</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/x-ui</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardErrorPath</key>
-    <string>/var/log/x-ui.err</string>
-    <key>StandardOutPath</key>
-    <string>/var/log/x-ui.out</string>
-</dict>
-</plist>
-EOF
-
-# 加载服务
-sudo launchctl load /Library/LaunchDaemons/com.x-ui.plist
-```
+详见 [docs/guides/macos.md](./docs/guides/macos.md)。
 
 ---
 
@@ -403,125 +199,17 @@ docker buildx build \
 
 ### 部署说明
 
-#### Linux 部署
-
-##### 1. 使用安装脚本（推荐）
-
-```bash
-# 一键安装
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/main/install.sh)
-```
-
-##### 2. 手动部署
-
-```bash
-# 创建目录结构
-sudo mkdir -p /usr/local/x-ui/bin
-
-# 复制文件
-sudo cp x-ui /usr/local/x-ui/
-sudo cp -r bin/* /usr/local/x-ui/bin/
-sudo chmod +x /usr/local/x-ui/x-ui
-sudo chmod +x /usr/local/x-ui/bin/xray
-
-# 创建 systemd 服务
-sudo tee /etc/systemd/system/x-ui.service > /dev/null <<EOF
-[Unit]
-Description=3x-ui Service
-After=network.target nss-lookup.target
-
-[Service]
-User=root
-WorkingDirectory=/usr/local/x-ui
-ExecStart=/usr/local/x-ui/x-ui
-Restart=on-failure
-RestartPreventExitStatus=23
-LimitNPROC=10000
-LimitNOFILE=1000000
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# 重载 systemd 并启动服务
-sudo systemctl daemon-reload
-sudo systemctl enable x-ui
-sudo systemctl start x-ui
-
-# 查看服务状态
-sudo systemctl status x-ui
-
-# 查看日志
-sudo journalctl -u x-ui -f
-```
-
-##### 3. 配置防火墙
-
-```bash
-# UFW (Ubuntu/Debian)
-sudo ufw allow 54321/tcp  # 默认面板端口
-sudo ufw allow 443/tcp    # HTTPS
-sudo ufw reload
-
-# Firewalld (RHEL/CentOS)
-sudo firewall-cmd --permanent --add-port=54321/tcp
-sudo firewall-cmd --permanent --add-port=443/tcp
-sudo firewall-cmd --reload
-
-# iptables
-sudo iptables -I INPUT -p tcp --dport 54321 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
-sudo iptables-save > /etc/iptables/rules.v4
-```
-
-#### Windows 部署
-
-```powershell
-# 1. 创建安装目录
-New-Item -Path "C:\Program Files\x-ui" -ItemType Directory -Force
-
-# 2. 复制文件
-Copy-Item x-ui.exe "C:\Program Files\x-ui\"
-Copy-Item -Path bin\* -Destination "C:\Program Files\x-ui\bin\" -Recurse
-
-# 3. 创建 Windows 服务（使用 NSSM）
-nssm install x-ui "C:\Program Files\x-ui\x-ui.exe"
-nssm set x-ui AppDirectory "C:\Program Files\x-ui"
-nssm set x-ui DisplayName "3X-UI Service"
-nssm set x-ui Description "3X-UI Web Panel for Xray"
-nssm set x-ui Start SERVICE_AUTO_START
-
-# 4. 启动服务
-nssm start x-ui
-
-# 5. 配置防火墙
-New-NetFirewallRule -DisplayName "3X-UI Panel" -Direction Inbound -Protocol TCP -LocalPort 54321 -Action Allow
-New-NetFirewallRule -DisplayName "3X-UI HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
-```
-
-#### macOS 部署
-
-```bash
-# 1. 安装到系统目录
-sudo mkdir -p /usr/local/x-ui/bin
-sudo cp x-ui /usr/local/x-ui/
-sudo cp -r bin/* /usr/local/x-ui/bin/
-sudo chmod +x /usr/local/x-ui/x-ui
-sudo chmod +x /usr/local/x-ui/bin/xray
-
-# 2. 创建 LaunchDaemon（见上文）
-
-# 3. 或者使用前台运行
-cd /usr/local/x-ui
-./x-ui
-```
+- Linux 安装/手动部署：见 [docs/guides/linux.md](./docs/guides/linux.md)
+- Windows 安装：见 [docs/guides/windows.md](./docs/guides/windows.md)
+- macOS 安装：见 [docs/guides/macos.md](./docs/guides/macos.md)
+- 交叉编译、Alpine/OpenRC、Docker：见 [docs/guides/linux_other.md](./docs/guides/linux_other.md)
 
 #### 访问面板
 
 编译部署完成后，通过浏览器访问：
 
 ```
-http://服务器IP:54321/
+http://服务器IP:2053/
 ```
 
 默认登录凭据：
@@ -590,9 +278,9 @@ sudo ./x-ui
 
 ```bash
 # 查找占用端口的进程
-sudo lsof -i :54321
+sudo lsof -i :2053
 # 或
-sudo netstat -tulpn | grep 54321
+sudo netstat -tulpn | grep 2053
 
 # 终止进程
 sudo kill -9 <PID>
@@ -775,315 +463,41 @@ brew install git wget
 
 ### Linux Compilation (EN)
 
-#### Method 1: Simple Build (Dynamic Linking)
-
-```bash
-# 1. Clone the project
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. Download Go module dependencies
-go mod download
-
-# 3. Build
-CGO_ENABLED=1 go build -o x-ui main.go
-
-# 4. Verify build
-./x-ui -v
-```
-
-#### Method 2: Static Build (Recommended for Production)
-
-```bash
-# 1. Clone the project
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. Download dependencies
-go mod download
-
-# 3. Static build
-CGO_ENABLED=1 go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o x-ui main.go
-
-# 4. Verify static linking
-ldd x-ui
-# Should show "not a dynamic executable" or no output
-
-# 5. Check file size and type
-ls -lh x-ui
-file x-ui
-```
-
-#### Method 3: Build with Docker (No Local Go Installation Required)
-
-```bash
-# Use official Go image for building
-docker run --rm \
-  -v "$PWD":/app \
-  -w /app \
-  golang:1.25 \
-  sh -c "go mod download && CGO_ENABLED=1 go build -o x-ui main.go"
-```
-
-#### Download Xray-core and Geodata
-
-```bash
-# Create bin directory
-mkdir -p bin
-cd bin
-
-# Download Xray-core (choose based on architecture)
-# amd64
-wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
-unzip Xray-linux-64.zip
-rm Xray-linux-64.zip
-
-# arm64
-# wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-arm64-v8a.zip
-# unzip Xray-linux-arm64-v8a.zip
-
-# Download geodata
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-
-# Download region-specific geodata (optional)
-wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-wget -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
-wget -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
-
-cd ..
-```
+See the dedicated [Linux guide](./docs/guides/linux.md) for build and deployment steps.
 
 ---
 
 ### Windows Compilation (EN)
 
-#### Method 1: Build with PowerShell
-
-```powershell
-# 1. Clone the project
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. Set environment variables
-$env:CGO_ENABLED="1"
-$env:GOOS="windows"
-$env:GOARCH="amd64"
-
-# 3. Download dependencies
-go mod download
-
-# 4. Build
-go build -ldflags "-w -s" -o x-ui.exe main.go
-
-# 5. Verify
-.\x-ui.exe -v
-```
-
-#### Download Xray-core and Geodata
-
-```powershell
-# Create bin directory
-New-Item -Path bin -ItemType Directory -Force
-cd bin
-
-# Download Xray-core
-Invoke-WebRequest -Uri "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
-Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath .
-Remove-Item "Xray-windows-64.zip"
-
-# Download geodata
-Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip.dat"
-Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite.dat"
-
-# Download region-specific data (optional)
-Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat" -OutFile "geoip_IR.dat"
-Invoke-WebRequest -Uri "https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat" -OutFile "geosite_IR.dat"
-Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip_RU.dat"
-Invoke-WebRequest -Uri "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite_RU.dat"
-
-cd ..
-```
-
-#### Create Windows Service (Optional)
-
-```powershell
-# Create Windows service using NSSM
-# 1. Download NSSM: https://nssm.cc/download
-# 2. Install service
-nssm install x-ui "C:\path\to\x-ui.exe"
-nssm set x-ui AppDirectory "C:\path\to\"
-nssm start x-ui
-```
+Refer to [docs/guides/windows.md](./docs/guides/windows.md) for build, service, and firewall instructions.
 
 ---
 
 ### macOS Compilation (EN)
 
-#### Build Steps
-
-```bash
-# 1. Clone the project
-git clone https://github.com/MHSanaei/3x-ui.git
-cd 3x-ui
-
-# 2. Set environment variables
-export CGO_ENABLED=1
-export GOOS=darwin
-export GOARCH=amd64  # or arm64 for Apple Silicon
-
-# 3. Download dependencies
-go mod download
-
-# 4. Build
-go build -ldflags "-w -s" -o x-ui main.go
-
-# 5. Grant execute permission
-chmod +x x-ui
-
-# 6. Verify
-./x-ui -v
-```
-
-#### Download Xray-core and Geodata
-
-```bash
-# Create bin directory
-mkdir -p bin
-cd bin
-
-# Download Xray-core
-# Intel Mac (amd64)
-wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-macos-64.zip
-unzip Xray-macos-64.zip
-rm Xray-macos-64.zip
-
-# Apple Silicon (arm64)
-# wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-macos-arm64-v8a.zip
-# unzip Xray-macos-arm64-v8a.zip
-
-# Download geodata
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-wget -O geoip_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-wget -O geosite_IR.dat https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-wget -O geoip_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
-wget -O geosite_RU.dat https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
-
-cd ..
-```
+Use [docs/guides/macos.md](./docs/guides/macos.md) for build, LaunchDaemon bootstrap, and troubleshooting.
 
 ---
 
 ### Cross-Compilation (EN)
 
-#### Cross-Compile on Linux to Multiple Architectures
-
-```bash
-#!/bin/bash
-# build-all.sh - Cross-compilation script
-
-platforms=(
-    "linux/amd64"
-    "linux/arm64"
-    "linux/arm/7"    # ARMv7
-    "linux/arm/6"    # ARMv6
-    "linux/arm/5"    # ARMv5
-    "linux/386"
-    "linux/s390x"
-    "windows/amd64"
-    "darwin/amd64"
-    "darwin/arm64"
-)
-
-for platform in "${platforms[@]}"; do
-    IFS='/' read -r os arch arm <<< "$platform"
-
-    output="x-ui-${os}-${arch}"
-    [ -n "$arm" ] && output="${output}v${arm}"
-    [ "$os" = "windows" ] && output="${output}.exe"
-
-    echo "Building ${os}/${arch}${arm:+v$arm}..."
-
-    export CGO_ENABLED=1
-    export GOOS=$os
-    export GOARCH=$arch
-    [ -n "$arm" ] && export GOARM=$arm
-
-    # Set cross-compilation toolchain (for Linux static builds)
-    if [ "$os" = "linux" ]; then
-        go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o "$output" main.go
-    else
-        go build -ldflags "-w -s" -o "$output" main.go
-    fi
-
-    [ $? -eq 0 ] && echo "✓ $output build successful" || echo "✗ $output build failed"
-done
-```
+Docker Buildx, multi-arch builds, and Alpine/OpenRC notes are documented in [docs/guides/linux_other.md](./docs/guides/linux_other.md).
 
 ---
 
 ### Deployment (EN)
 
-#### Linux Deployment
-
-##### Using Installation Script (Recommended)
-
-```bash
-# One-line installation
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/main/install.sh)
-```
-
-##### Manual Deployment
-
-```bash
-# Create directory structure
-sudo mkdir -p /usr/local/x-ui/bin
-
-# Copy files
-sudo cp x-ui /usr/local/x-ui/
-sudo cp -r bin/* /usr/local/x-ui/bin/
-sudo chmod +x /usr/local/x-ui/x-ui
-sudo chmod +x /usr/local/x-ui/bin/xray
-
-# Create systemd service
-sudo tee /etc/systemd/system/x-ui.service > /dev/null <<EOF
-[Unit]
-Description=3x-ui Service
-After=network.target nss-lookup.target
-
-[Service]
-User=root
-WorkingDirectory=/usr/local/x-ui
-ExecStart=/usr/local/x-ui/x-ui
-Restart=on-failure
-RestartPreventExitStatus=23
-LimitNPROC=10000
-LimitNOFILE=1000000
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Reload systemd and start service
-sudo systemctl daemon-reload
-sudo systemctl enable x-ui
-sudo systemctl start x-ui
-
-# Check service status
-sudo systemctl status x-ui
-
-# View logs
-sudo journalctl -u x-ui -f
-```
+- Linux deployment instructions: [docs/guides/linux.md](./docs/guides/linux.md)
+- Windows deployment: [docs/guides/windows.md](./docs/guides/windows.md)
+- macOS deployment: [docs/guides/macos.md](./docs/guides/macos.md)
+- Cross-platform builds & Alpine/OpenRC: [docs/guides/linux_other.md](./docs/guides/linux_other.md)
 
 #### Access the Panel
 
 After deployment, access the panel via browser:
 
 ```
-http://server-ip:54321/
+http://server-ip:2053/
 ```
 
 Default credentials:
