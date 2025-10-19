@@ -2,8 +2,11 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 
+	"github.com/mhsanaei/3x-ui/v2/database/model"
 	"github.com/mhsanaei/3x-ui/v2/web/service"
+	"github.com/mhsanaei/3x-ui/v2/web/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,7 +43,35 @@ func (a *XraySettingController) initRouter(g *gin.RouterGroup) {
 
 // getXraySetting retrieves the Xray configuration template and inbound tags.
 func (a *XraySettingController) getXraySetting(c *gin.Context) {
-	xraySetting, err := a.SettingService.GetXrayConfigTemplate()
+	templateJSON, err := a.SettingService.GetXrayConfigTemplate()
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
+		return
+	}
+	var template map[string]any
+	if err := json.Unmarshal([]byte(templateJSON), &template); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
+		return
+	}
+
+	// Ensure template structure exists
+	if template == nil {
+		template = map[string]any{}
+	}
+
+	template["inbounds"], err = a.appendManagedInbounds(template["inbounds"])
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
+		return
+	}
+
+	template["outbounds"], err = a.appendManagedOutbounds(template["outbounds"])
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
+		return
+	}
+
+	combinedTemplate, err := json.Marshal(template)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
 		return
@@ -63,7 +94,7 @@ func (a *XraySettingController) getXraySetting(c *gin.Context) {
 	}
 
 	response := map[string]json.RawMessage{
-		"xraySetting":     json.RawMessage(xraySetting),
+		"xraySetting":     json.RawMessage(combinedTemplate),
 		"inboundTags":     json.RawMessage(inboundTags),
 		"effectiveConfig": json.RawMessage(effectiveConfigJSON),
 	}
@@ -74,8 +105,147 @@ func (a *XraySettingController) getXraySetting(c *gin.Context) {
 // updateSetting updates the Xray configuration settings.
 func (a *XraySettingController) updateSetting(c *gin.Context) {
 	xraySetting := c.PostForm("xraySetting")
-	err := a.XraySettingService.SaveXraySetting(xraySetting)
+	if xraySetting == "" {
+		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.modifySettings"), errors.New("empty xraySetting payload"))
+		return
+	}
+
+	user := session.GetLoginUser(c)
+	ownerID := 0
+	if user != nil {
+		ownerID = user.Id
+	}
+
+	err := a.XraySettingService.ApplyAdvancedSetting(xraySetting, &a.InboundService, &a.OutboundService, ownerID)
+	if err == nil {
+		a.XrayService.SetToNeedRestart()
+	}
 	jsonMsg(c, I18nWeb(c, "pages.settings.toasts.modifySettings"), err)
+}
+
+func (a *XraySettingController) appendManagedInbounds(base any) (any, error) {
+	var templateInbounds []any
+	if baseSlice, ok := base.([]any); ok {
+		templateInbounds = append(templateInbounds, baseSlice...)
+	} else if base != nil {
+		if raw, ok := base.(json.RawMessage); ok {
+			if err := json.Unmarshal(raw, &templateInbounds); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	inbounds, err := a.InboundService.GetAllInbounds()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, inbound := range inbounds {
+		inboundMap, err := convertInboundModel(inbound)
+		if err != nil {
+			return nil, err
+		}
+		templateInbounds = append(templateInbounds, inboundMap)
+	}
+
+	return templateInbounds, nil
+}
+
+func (a *XraySettingController) appendManagedOutbounds(base any) (any, error) {
+	var templateOutbounds []any
+	if baseSlice, ok := base.([]any); ok {
+		templateOutbounds = append(templateOutbounds, baseSlice...)
+	} else if base != nil {
+		if raw, ok := base.(json.RawMessage); ok {
+			if err := json.Unmarshal(raw, &templateOutbounds); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	outbounds, err := a.OutboundService.GetEnabledOutbounds()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, outbound := range outbounds {
+		outboundMap, err := convertOutboundModel(outbound)
+		if err != nil {
+			return nil, err
+		}
+		templateOutbounds = append(templateOutbounds, outboundMap)
+	}
+
+	return templateOutbounds, nil
+}
+
+func convertInboundModel(inbound *model.Inbound) (map[string]any, error) {
+	inboundMap := map[string]any{
+		"tag":      inbound.Tag,
+		"protocol": string(inbound.Protocol),
+		"port":     inbound.Port,
+	}
+	if inbound.Listen != "" {
+		inboundMap["listen"] = inbound.Listen
+	}
+	if inbound.Settings != "" {
+		var settings any
+		if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+			return nil, err
+		}
+		inboundMap["settings"] = settings
+	}
+	if inbound.StreamSettings != "" {
+		var streamSettings any
+		if err := json.Unmarshal([]byte(inbound.StreamSettings), &streamSettings); err != nil {
+			return nil, err
+		}
+		inboundMap["streamSettings"] = streamSettings
+	}
+	if inbound.Sniffing != "" {
+		var sniffing any
+		if err := json.Unmarshal([]byte(inbound.Sniffing), &sniffing); err != nil {
+			return nil, err
+		}
+		inboundMap["sniffing"] = sniffing
+	}
+	return inboundMap, nil
+}
+
+func convertOutboundModel(outbound *model.Outbound) (map[string]any, error) {
+	outboundMap := map[string]any{
+		"tag":      outbound.Tag,
+		"protocol": outbound.Protocol,
+	}
+	if outbound.Settings != "" {
+		var settings any
+		if err := json.Unmarshal([]byte(outbound.Settings), &settings); err != nil {
+			return nil, err
+		}
+		outboundMap["settings"] = settings
+	}
+	if outbound.StreamSettings != "" {
+		var streamSettings any
+		if err := json.Unmarshal([]byte(outbound.StreamSettings), &streamSettings); err != nil {
+			return nil, err
+		}
+		outboundMap["streamSettings"] = streamSettings
+	}
+	if outbound.ProxySettings != "" {
+		var proxySettings any
+		if err := json.Unmarshal([]byte(outbound.ProxySettings), &proxySettings); err != nil {
+			return nil, err
+		}
+		outboundMap["proxySettings"] = proxySettings
+	}
+	if outbound.Mux != "" {
+		var mux any
+		if err := json.Unmarshal([]byte(outbound.Mux), &mux); err != nil {
+			return nil, err
+		}
+		outboundMap["mux"] = mux
+	}
+	return outboundMap, nil
 }
 
 // getDefaultXrayConfig retrieves the default Xray configuration.
