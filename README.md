@@ -27,7 +27,7 @@
 bash <(curl -Ls https://raw.githubusercontent.com/Jiusi-pys/3x-ui/main/install.sh)
 ```
 
-更多平台及步骤详见仓库内的《[3X-UI 编译部署指南](./COMPILATION_GUIDE.md)》，以及分平台文档：
+更多平台及步骤见下方“跨平台安装与卸载指南”，以及分平台文档：
 - [Linux 指南](./docs/guides/linux.md)
 - [其他 Linux 场景](./docs/guides/linux_other.md)
 - [Windows 指南](./docs/guides/windows.md)
@@ -47,11 +47,10 @@ bash <(curl -Ls https://raw.githubusercontent.com/Jiusi-pys/3x-ui/main/install.s
 
 ## 文档与支持
 
-- [COMPILATION_GUIDE.md](./COMPILATION_GUIDE.md)：覆盖 Linux/Windows/macOS 编译与手动部署步骤、常见问题。
-- [docs/guides/linux.md](./docs/guides/linux.md)：Linux 平台编译、脚本与手动部署。
-- [docs/guides/linux_other.md](./docs/guides/linux_other.md)：交叉编译、Docker Buildx、Alpine/OpenRC 等特殊场景。
-- [docs/guides/windows.md](./docs/guides/windows.md)：Windows 平台编译、服务安装与防火墙配置。
-- [docs/guides/macos.md](./docs/guides/macos.md)：macOS 编译、LaunchDaemon 配置与常见问题排查。
+- [docs/guides/linux.md](./docs/guides/linux.md)：Linux 平台编译、脚本与手动部署（含卸载）。
+- [docs/guides/linux_other.md](./docs/guides/linux_other.md)：交叉编译、Docker Buildx、Alpine/OpenRC（含卸载）。
+- [docs/guides/windows.md](./docs/guides/windows.md)：Windows 编译、NSSM 服务与防火墙（含卸载）。
+- [docs/guides/macos.md](./docs/guides/macos.md)：macOS 编译、LaunchDaemon、自启动与排错（含卸载）。
 - 面板内置操作指南，可在“系统设置”与“Xray 设置”页面查看实时状态及日志。
 
 ## 特别感谢

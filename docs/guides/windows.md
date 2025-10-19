@@ -34,6 +34,9 @@ Invoke-WebRequest -Uri "https://github.com/XTLS/Xray-core/releases/latest/downlo
 Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath .
 Remove-Item "Xray-windows-64.zip"
 
+# 标准化命名，便于面板识别
+Rename-Item -Path ".\xray.exe" -NewName "xray-windows-amd64.exe" -ErrorAction SilentlyContinue
+
 Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" -OutFile "geoip.dat"
 Invoke-WebRequest -Uri "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" -OutFile "geosite.dat"
 
@@ -67,6 +70,21 @@ New-NetFirewallRule -DisplayName "3X-UI Subscription" -Direction Inbound -Protoc
 
 首次运行后访问 `http://<主机IP>:2053/`，默认账号密码会在首次安装时随机生成（或保持 `admin/admin`，请立即修改）。
 
+### 卸载 / Uninstall
+
+```powershell
+# 停止并移除服务
+nssm stop x-ui
+nssm remove x-ui confirm
+
+# 删除程序与配置
+Remove-Item -Path "C:\\Program Files\\x-ui" -Recurse -Force
+
+# 可选：移除防火墙规则（如按本指南创建）
+Get-NetFirewallRule -DisplayName "3X-UI Panel" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+Get-NetFirewallRule -DisplayName "3X-UI Subscription" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+```
+
 ---
 
 ## English Guide
@@ -94,3 +112,13 @@ Same as the Chinese section: create `bin\`, download the latest `Xray-windows-64
 2. Use [NSSM](https://nssm.cc/) to register `x-ui.exe` as a Windows service (`nssm install x-ui ...`).
 3. Open TCP ports `2053` and `2096` in Windows Firewall (`New-NetFirewallRule ...`).
 4. Browse to `http://<host>:2053/` to complete setup.
+
+### Uninstall
+
+```powershell
+nssm stop x-ui
+nssm remove x-ui confirm
+Remove-Item -Path "C:\\Program Files\\x-ui" -Recurse -Force
+Get-NetFirewallRule -DisplayName "3X-UI Panel" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+Get-NetFirewallRule -DisplayName "3X-UI Subscription" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+```

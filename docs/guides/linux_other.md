@@ -61,6 +61,15 @@ docker buildx build \
 - 服务脚本可放置于 `/etc/init.d/x-ui` 并执行 `rc-update add x-ui`.
 - 若使用一键脚本，会自动拉取仓库中的 `x-ui.rc` 并完成注册。
 
+#### 卸载 / Uninstall（OpenRC）
+
+```bash
+sudo rc-service x-ui stop || true
+sudo rc-update del x-ui || true
+sudo rm -f /etc/init.d/x-ui
+sudo rm -rf /usr/local/x-ui /etc/x-ui
+```
+
 ---
 
 ## English Guide
@@ -85,3 +94,12 @@ Combine the resulting artifacts with architecture-specific Xray binaries (run `.
 - Packages: `apk add go build-base wget curl tzdata`
 - Service: install `x-ui.rc` to `/etc/init.d/x-ui`, then `rc-update add x-ui && rc-service x-ui start`.
 - Firewall: use `iptables` or `nftables` to allow TCP 2053/2096 as needed.
+
+#### Uninstall (OpenRC)
+
+```bash
+sudo rc-service x-ui stop || true
+sudo rc-update del x-ui || true
+sudo rm -f /etc/init.d/x-ui
+sudo rm -rf /usr/local/x-ui /etc/x-ui
+```

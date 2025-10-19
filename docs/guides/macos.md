@@ -134,6 +134,20 @@ sudo launchctl print system/com.x-ui          # 查看状态
 
 临时前台运行：`sudo /usr/local/x-ui/x-ui`
 
+## 卸载 / Uninstall
+
+```bash
+# 停止并移除 LaunchDaemon
+sudo launchctl bootout system/com.x-ui || true
+sudo rm -f /Library/LaunchDaemons/com.x-ui.plist
+
+# 删除程序与配置
+sudo rm -rf /usr/local/x-ui /etc/x-ui
+
+# 可选：清理日志
+sudo rm -rf /var/log/x-ui || true
+```
+
 ## 故障排查
 
 ### fork/exec bin/xray-darwin-amd64: no such file or directory
