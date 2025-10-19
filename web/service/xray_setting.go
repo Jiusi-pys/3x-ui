@@ -66,36 +66,20 @@ func (s *XraySettingService) ApplyAdvancedSetting(payload string, inboundService
 	postedInbounds := toSlice(posted["inbounds"])
 	postedOutbounds := toSlice(posted["outbounds"])
 
-	var managedInboundMaps []map[string]any
-	var managedOutboundMaps []map[string]any
-
-	templateInbounds := make([]any, 0, len(postedInbounds))
-	for _, item := range postedInbounds {
-		inboundMap, ok := toMap(item)
-		if !ok {
-			continue
-		}
-		tag := getString(inboundMap["tag"])
-		if shouldPersistInTemplate(tag, templateInboundTags, inboundMap, true) {
-			templateInbounds = append(templateInbounds, inboundMap)
-		} else {
-			managedInboundMaps = append(managedInboundMaps, inboundMap)
-		}
+	existingInbounds, err := inboundService.GetAllInbounds()
+	if err != nil {
+		return err
 	}
+	existingInboundByTag := indexInboundsByTag(existingInbounds)
 
-	templateOutbounds := make([]any, 0, len(postedOutbounds))
-	for _, item := range postedOutbounds {
-		outboundMap, ok := toMap(item)
-		if !ok {
-			continue
-		}
-		tag := getString(outboundMap["tag"])
-		if shouldPersistInTemplate(tag, templateOutboundTags, outboundMap, false) {
-			templateOutbounds = append(templateOutbounds, outboundMap)
-		} else {
-			managedOutboundMaps = append(managedOutboundMaps, outboundMap)
-		}
+	existingOutbounds, err := outboundService.GetAllOutbounds()
+	if err != nil {
+		return err
 	}
+	existingOutboundByTag, existingEnabledOutboundByTag := indexOutboundsByTag(existingOutbounds)
+
+	templateInbounds, managedInbounds := partitionInbounds(postedInbounds, templateInboundTags, existingInboundByTag)
+	templateOutbounds, managedOutbounds := partitionOutbounds(postedOutbounds, templateOutboundTags, existingOutboundByTag)
 
 	templateMap["inbounds"] = templateInbounds
 	templateMap["outbounds"] = templateOutbounds
@@ -115,10 +99,10 @@ func (s *XraySettingService) ApplyAdvancedSetting(payload string, inboundService
 		return err
 	}
 
-	if err := syncManagedInbounds(managedInboundMaps, inboundService); err != nil {
+	if err := syncManagedInbounds(managedInbounds, existingInboundByTag); err != nil {
 		return err
 	}
-	return syncManagedOutbounds(managedOutboundMaps, outboundService)
+	return syncManagedOutbounds(managedOutbounds, existingEnabledOutboundByTag)
 }
 
 func decodeJSONPayload(data string) (map[string]any, error) {
@@ -145,6 +129,78 @@ func collectTemplateTags(value any) map[string]struct{} {
 		}
 	}
 	return tags
+}
+
+func indexInboundsByTag(inbounds []*model.Inbound) map[string]*model.Inbound {
+	result := make(map[string]*model.Inbound, len(inbounds))
+	for _, inbound := range inbounds {
+		if inbound == nil || inbound.Tag == "" {
+			continue
+		}
+		result[inbound.Tag] = inbound
+	}
+	return result
+}
+
+func indexOutboundsByTag(outbounds []*model.Outbound) (map[string]*model.Outbound, map[string]*model.Outbound) {
+	all := make(map[string]*model.Outbound, len(outbounds))
+	enabled := make(map[string]*model.Outbound)
+	for _, outbound := range outbounds {
+		if outbound == nil || outbound.Tag == "" {
+			continue
+		}
+		all[outbound.Tag] = outbound
+		if outbound.Enable {
+			enabled[outbound.Tag] = outbound
+		}
+	}
+	return all, enabled
+}
+
+func partitionInbounds(items []any, templateTags map[string]struct{}, existing map[string]*model.Inbound) ([]any, []*model.Inbound) {
+	templateInbounds := make([]any, 0, len(items))
+	managed := make([]*model.Inbound, 0, len(items))
+	for _, item := range items {
+		inboundMap, ok := toMap(item)
+		if !ok {
+			continue
+		}
+		tag := getString(inboundMap["tag"])
+		if shouldPersistInTemplate(tag, templateTags, inboundMap, true) {
+			templateInbounds = append(templateInbounds, inboundMap)
+			continue
+		}
+		inboundModel, err := buildInboundFromPayload(inboundMap, existing[tag])
+		if err != nil || inboundModel == nil || inboundModel.Tag == "" || inboundModel.Port <= 0 || inboundModel.Protocol == "" {
+			templateInbounds = append(templateInbounds, inboundMap)
+			continue
+		}
+		managed = append(managed, inboundModel)
+	}
+	return templateInbounds, managed
+}
+
+func partitionOutbounds(items []any, templateTags map[string]struct{}, existing map[string]*model.Outbound) ([]any, []*model.Outbound) {
+	templateOutbounds := make([]any, 0, len(items))
+	managed := make([]*model.Outbound, 0, len(items))
+	for _, item := range items {
+		outboundMap, ok := toMap(item)
+		if !ok {
+			continue
+		}
+		tag := getString(outboundMap["tag"])
+		if shouldPersistInTemplate(tag, templateTags, outboundMap, false) {
+			templateOutbounds = append(templateOutbounds, outboundMap)
+			continue
+		}
+		outboundModel, err := buildOutboundFromPayload(outboundMap, existing[tag])
+		if err != nil || outboundModel == nil || outboundModel.Tag == "" || outboundModel.Protocol == "" {
+			templateOutbounds = append(templateOutbounds, outboundMap)
+			continue
+		}
+		managed = append(managed, outboundModel)
+	}
+	return templateOutbounds, managed
 }
 
 func shouldPersistInTemplate(tag string, templateTags map[string]struct{}, payload map[string]any, isInbound bool) bool {
@@ -246,33 +302,17 @@ func parsePort(value any) (int, error) {
 	}
 }
 
-func syncManagedInbounds(items []map[string]any, inboundService *InboundService) error {
+func syncManagedInbounds(inbounds []*model.Inbound, existingByTag map[string]*model.Inbound) error {
 	db := database.GetDB()
-	existing, err := inboundService.GetAllInbounds()
-	if err != nil {
-		return err
-	}
-
-	existingByTag := make(map[string]*model.Inbound, len(existing))
-	for _, inbound := range existing {
-		existingByTag[inbound.Tag] = inbound
-	}
-
 	seen := map[string]struct{}{}
-	for _, payload := range items {
-		tag := getString(payload["tag"])
-		inboundModel, err := buildInboundFromPayload(payload, existingByTag[tag])
-		if err != nil {
-			return err
-		}
-		if inboundModel == nil || inboundModel.Tag == "" {
+	for _, inbound := range inbounds {
+		if inbound == nil || inbound.Tag == "" {
 			continue
 		}
-
-		if err := db.Save(inboundModel).Error; err != nil {
+		if err := db.Save(inbound).Error; err != nil {
 			return err
 		}
-		seen[inboundModel.Tag] = struct{}{}
+		seen[inbound.Tag] = struct{}{}
 	}
 
 	for tag, inbound := range existingByTag {
@@ -294,6 +334,7 @@ func buildInboundFromPayload(payload map[string]any, existing *model.Inbound) (*
 		copy := *existing
 		existing = &copy
 	}
+	existing.Enable = true
 
 	existing.Tag = getString(payload["tag"])
 	if listen, ok := payload["listen"].(string); ok {
@@ -332,38 +373,20 @@ func buildInboundFromPayload(payload map[string]any, existing *model.Inbound) (*
 	return existing, nil
 }
 
-func syncManagedOutbounds(items []map[string]any, outboundService *OutboundService) error {
+func syncManagedOutbounds(outbounds []*model.Outbound, existingEnabled map[string]*model.Outbound) error {
 	db := database.GetDB()
-	existing, err := outboundService.GetAllOutbounds()
-	if err != nil {
-		return err
-	}
-
-	existingByTag := make(map[string]*model.Outbound)
-	for _, outbound := range existing {
-		if outbound.Enable {
-			existingByTag[outbound.Tag] = outbound
-		}
-	}
-
 	seen := map[string]struct{}{}
-	for _, payload := range items {
-		tag := getString(payload["tag"])
-		outboundModel, err := buildOutboundFromPayload(payload, existingByTag[tag])
-		if err != nil {
-			return err
-		}
-		if outboundModel == nil || outboundModel.Tag == "" {
+	for _, outbound := range outbounds {
+		if outbound == nil || outbound.Tag == "" {
 			continue
 		}
-
-		if err := saveOutbound(db, outboundModel).Error; err != nil {
+		if err := saveOutbound(db, outbound).Error; err != nil {
 			return err
 		}
-		seen[outboundModel.Tag] = struct{}{}
+		seen[outbound.Tag] = struct{}{}
 	}
 
-	for tag, outbound := range existingByTag {
+	for tag, outbound := range existingEnabled {
 		if _, ok := seen[tag]; ok {
 			continue
 		}
@@ -383,6 +406,7 @@ func buildOutboundFromPayload(payload map[string]any, existing *model.Outbound) 
 		copy := *existing
 		existing = &copy
 	}
+	existing.Enable = true
 
 	existing.Tag = getString(payload["tag"])
 	if protocol, ok := payload["protocol"].(string); ok {
