@@ -372,10 +372,9 @@
           }
 
           const result = msg.obj || {};
-          const templateConfig = result.xraySetting || {};
-          const xs = JSON.stringify(templateConfig, null, 2);
-          this.oldXraySetting = xs;
-          this.xraySetting = xs;
+          const templateConfig = this.ensureTemplateStructure(result.xraySetting || {});
+          this.templateSettings = templateConfig;
+          this.oldXraySetting = this.xraySetting;
           this.inboundTags = result.inboundTags || [];
           this.effectiveConfig = JSON.stringify(result.effectiveConfig || {}, null, 2);
           if (this.cm != null && this.advSettings === 'effectiveConfig') {
