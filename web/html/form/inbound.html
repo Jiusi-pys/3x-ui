@@ -109,7 +109,7 @@
 </template>
 
 <!-- tunnel -->
-<template v-if="inbound.protocol === Protocols.TUNNEL">
+<template v-if="inbound.protocol === Protocols.TUNNEL || inbound.protocol === Protocols.DOKODEMO_DOOR">
     {{template "form/tunnel"}}
 </template>
 

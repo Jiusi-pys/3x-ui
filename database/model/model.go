@@ -13,14 +13,15 @@ type Protocol string
 
 // Protocol constants for different Xray inbound protocols
 const (
-	VMESS       Protocol = "vmess"
-	VLESS       Protocol = "vless"
-	Tunnel      Protocol = "tunnel"
-	HTTP        Protocol = "http"
-	Trojan      Protocol = "trojan"
-	Shadowsocks Protocol = "shadowsocks"
-	Mixed       Protocol = "mixed"
-	WireGuard   Protocol = "wireguard"
+	VMESS        Protocol = "vmess"
+	VLESS        Protocol = "vless"
+	Tunnel       Protocol = "tunnel"
+	DokodemoDoor Protocol = "dokodemo-door"
+	HTTP         Protocol = "http"
+	Trojan       Protocol = "trojan"
+	Shadowsocks  Protocol = "shadowsocks"
+	Mixed        Protocol = "mixed"
+	WireGuard    Protocol = "wireguard"
 )
 
 // User represents a user account in the 3x-ui panel.

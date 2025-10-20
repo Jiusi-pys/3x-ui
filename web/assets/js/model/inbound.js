@@ -4,6 +4,7 @@ const Protocols = {
     TROJAN: 'trojan',
     SHADOWSOCKS: 'shadowsocks',
     TUNNEL: 'tunnel',
+    DOKODEMO_DOOR: 'dokodemo-door',
     MIXED: 'mixed',
     HTTP: 'http',
     WIREGUARD: 'wireguard',
@@ -1712,7 +1713,9 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.VLESS: return new Inbound.VLESSSettings(protocol);
             case Protocols.TROJAN: return new Inbound.TrojanSettings(protocol);
             case Protocols.SHADOWSOCKS: return new Inbound.ShadowsocksSettings(protocol);
-            case Protocols.TUNNEL: return new Inbound.TunnelSettings(protocol);
+            case Protocols.TUNNEL:
+            case Protocols.DOKODEMO_DOOR:
+                return new Inbound.TunnelSettings(protocol);
             case Protocols.MIXED: return new Inbound.MixedSettings(protocol);
             case Protocols.HTTP: return new Inbound.HttpSettings(protocol);
             case Protocols.WIREGUARD: return new Inbound.WireguardSettings(protocol);
@@ -1726,7 +1729,9 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.VLESS: return Inbound.VLESSSettings.fromJson(json);
             case Protocols.TROJAN: return Inbound.TrojanSettings.fromJson(json);
             case Protocols.SHADOWSOCKS: return Inbound.ShadowsocksSettings.fromJson(json);
-            case Protocols.TUNNEL: return Inbound.TunnelSettings.fromJson(json);
+            case Protocols.TUNNEL:
+            case Protocols.DOKODEMO_DOOR:
+                return Inbound.TunnelSettings.fromJson(protocol, json);
             case Protocols.MIXED: return Inbound.MixedSettings.fromJson(json);
             case Protocols.HTTP: return Inbound.HttpSettings.fromJson(json);
             case Protocols.WIREGUARD: return Inbound.WireguardSettings.fromJson(json);
@@ -2344,9 +2349,9 @@ Inbound.TunnelSettings = class extends Inbound.Settings {
         this.followRedirect = followRedirect;
     }
 
-    static fromJson(json = {}) {
+    static fromJson(protocol = Protocols.TUNNEL, json = {}) {
         return new Inbound.TunnelSettings(
-            Protocols.TUNNEL,
+            protocol,
             json.address,
             json.port,
             XrayCommonClass.toHeaders(json.portMap),
