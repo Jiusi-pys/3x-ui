@@ -11,6 +11,14 @@
 - Go 1.25.1+：`brew install go@1.25`，并确认 `go version`
 - 常用工具：`brew install git wget unzip`（macOS 默认不含 wget）
 
+```bash
+# 验证工具与环境
+xcode-select -p       # 应输出 CommandLineTools 路径
+git --version
+go version
+cc --version          # clang/AppleClang 版本
+```
+
 ## 构建步骤 / Build Steps
 
 ```bash
@@ -29,10 +37,13 @@ cd build/bin
 # Intel Mac
 wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-macos-64.zip
 unzip Xray-macos-64.zip && rm Xray-macos-64.zip
+# 标准化命名，便于面板识别（Intel）
+mv Xray xray-darwin-amd64
 
 # Apple Silicon (如需)
 # wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-macos-arm64-v8a.zip
 # unzip Xray-macos-arm64-v8a.zip && rm Xray-macos-arm64-v8a.zip
+# mv Xray xray-darwin-arm64   # Apple Silicon 标准命名
 
 wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
 wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat

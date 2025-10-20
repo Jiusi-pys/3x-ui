@@ -6,6 +6,28 @@
 
 ## 中文指南
 
+### 先决条件 / 工具安装
+
+- 基本构建工具：Git、GCC/Make、wget、unzip、curl、tzdata
+- 发行版示例安装命令：
+
+```bash
+# Alpine
+sudo apk add --update go build-base git wget curl unzip tzdata
+
+# Debian/Ubuntu
+sudo apt update
+sudo apt install -y build-essential gcc g++ make git wget curl unzip tzdata
+
+# RHEL/CentOS/Fedora
+sudo dnf install -y gcc gcc-c++ make git wget curl unzip tzdata
+
+# 验证
+git --version
+gcc --version
+go version
+```
+
 ### 交叉编译
 
 ```bash
@@ -73,6 +95,28 @@ sudo rm -rf /usr/local/x-ui /etc/x-ui
 ---
 
 ## English Guide
+
+### Prerequisites
+
+- Build essentials: Git, GCC/Make, wget, unzip, curl, tzdata
+- Examples per distro:
+
+```bash
+# Alpine
+apk add --update go build-base git wget curl unzip tzdata
+
+# Debian/Ubuntu
+sudo apt update
+sudo apt install -y build-essential gcc g++ make git wget curl unzip tzdata
+
+# RHEL/CentOS/Fedora
+sudo dnf install -y gcc gcc-c++ make git wget curl unzip tzdata
+
+# Verify
+git --version
+gcc --version
+go version
+```
 
 ### Cross-compilation script
 

@@ -6,6 +6,29 @@
 
 ## 中文指南
 
+### 先决条件 / 工具安装
+
+- Git、GCC/构建工具、wget/unzip（不同发行版命名略有差异）
+- 推荐使用 systemd 管理服务，或按发行版使用 OpenRC 等替代
+
+```bash
+# Debian/Ubuntu
+sudo apt update
+sudo apt install -y build-essential gcc g++ make git wget unzip
+
+# RHEL/CentOS/Fedora
+sudo dnf install -y gcc gcc-c++ make git wget unzip
+
+# 可选：UFW/Firewalld 放行端口
+# sudo ufw allow 2053/tcp && sudo ufw allow 2096/tcp
+# 或：sudo firewall-cmd --add-port=2053/tcp --permanent && sudo firewall-cmd --add-port=2096/tcp --permanent && sudo firewall-cmd --reload
+
+# 验证工具
+git --version
+gcc --version
+go version
+```
+
 ### 编译方式
 
 #### 方法一：简单编译（动态链接）
@@ -204,6 +227,29 @@ sudo rm -rf /usr/local/x-ui /etc/x-ui
 ---
 
 ## English Guide
+
+### Prerequisites
+
+- Git, GCC/build tools, wget/unzip
+- A service manager (systemd recommended) and basic firewall tooling
+
+```bash
+# Debian/Ubuntu
+sudo apt update
+sudo apt install -y build-essential gcc g++ make git wget unzip
+
+# RHEL/CentOS/Fedora
+sudo dnf install -y gcc gcc-c++ make git wget unzip
+
+# Optional: open firewall ports
+# sudo ufw allow 2053/tcp && sudo ufw allow 2096/tcp
+# or: sudo firewall-cmd --add-port=2053/tcp --permanent && sudo firewall-cmd --add-port=2096/tcp --permanent && sudo firewall-cmd --reload
+
+# Verify
+git --version
+gcc --version
+go version
+```
 
 ### Build Options
 
